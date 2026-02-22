@@ -1,10 +1,43 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAppState } from '../lib/state';
 import { Difficulty, STUDY_TOPICS, Topic } from '../lib/types';
 
 export const SettingsPage = () => {
   const { state, setSettings } = useAppState();
   const [local, setLocal] = useState(state.settings);
+
+  const selectedCount = local.selectedTopics.length;
+  const allSelected = selectedCount === STUDY_TOPICS.length;
+
+  const topicGroups = useMemo(
+    () => [
+      {
+        title: 'Core Foundations',
+        topics: [
+          'Insurance Regulation',
+          'General Insurance',
+          'Property and Casualty Insurance Basics',
+        ] as Topic[],
+      },
+      {
+        title: 'Personal Lines',
+        topics: ['Dwelling (2014) Policy', 'Homeowners (2011) Policy', 'Auto Insurance'] as Topic[],
+      },
+      {
+        title: 'Commercial Lines',
+        topics: [
+          'Commercial Package Policy (CPP)',
+          'Businessowners (2010) Policy',
+          "Workers' Compensation Insurance",
+        ] as Topic[],
+      },
+      {
+        title: 'Other Areas',
+        topics: ['Other Coverages and Options', 'Accident and Health Insurance'] as Topic[],
+      },
+    ],
+    [],
+  );
 
   const toggleTopic = (topic: Topic) => {
     const selected = local.selectedTopics.includes(topic)
@@ -13,28 +46,103 @@ export const SettingsPage = () => {
     setLocal({ ...local, selectedTopics: selected });
   };
 
+  const save = () => {
+    setSettings({
+      ...local,
+      selectedTopics: local.selectedTopics.length ? local.selectedTopics : [...STUDY_TOPICS],
+    });
+  };
+
   return (
-    <section>
+    <section className="settings-page">
       <h1>Settings</h1>
-      <p>Exam mode: <strong>New York P&C</strong></p>
-      <h3>Study Topics</h3>
-      <div className="checklist">
-        {STUDY_TOPICS.map((topic) => (
-          <label key={topic}><input type="checkbox" checked={local.selectedTopics.includes(topic)} onChange={() => toggleTopic(topic)} />{topic}</label>
-        ))}
+
+      <div className="settings-block">
+        <h3>Exam</h3>
+        <p>
+          Mode: <strong>New York P&C</strong>
+        </p>
       </div>
-      <label>Definition-style ratio: {local.definitionRatio}%
-        <input type="range" min={0} max={100} value={local.definitionRatio} onChange={(e) => setLocal({ ...local, definitionRatio: Number(e.target.value) })} />
-      </label>
-      <label>Difficulty
-        <select value={local.difficulty} onChange={(e) => setLocal({ ...local, difficulty: e.target.value as Difficulty })}>
-          <option>Easy</option><option>Medium</option><option>Hard</option>
+
+      <div className="settings-block">
+        <div className="settings-row">
+          <h3>Study Topics</h3>
+          <span className="pill">
+            {selectedCount}/{STUDY_TOPICS.length} selected
+          </span>
+        </div>
+
+        <div className="topic-actions">
+          <button type="button" className="secondary-btn" onClick={() => setLocal({ ...local, selectedTopics: [...STUDY_TOPICS] })}>
+            Select all
+          </button>
+          <button type="button" className="secondary-btn" onClick={() => setLocal({ ...local, selectedTopics: [] })}>
+            Clear all
+          </button>
+          {!allSelected && selectedCount === 0 && (
+            <small className="inline-help">No topics selected. Saving will default to all topics.</small>
+          )}
+        </div>
+
+        <div className="topic-groups">
+          {topicGroups.map((group) => (
+            <div key={group.title} className="topic-group">
+              <h4>{group.title}</h4>
+              <div className="checklist">
+                {group.topics.map((topic) => (
+                  <label key={topic} className="topic-item">
+                    <input
+                      type="checkbox"
+                      checked={local.selectedTopics.includes(topic)}
+                      onChange={() => toggleTopic(topic)}
+                    />
+                    <span>{topic}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="settings-block">
+        <h3>Generation Preferences</h3>
+
+        <label htmlFor="definition-ratio">Definition-style ratio: {local.definitionRatio}%</label>
+        <input
+          id="definition-ratio"
+          type="range"
+          min={0}
+          max={100}
+          value={local.definitionRatio}
+          onChange={(e) => setLocal({ ...local, definitionRatio: Number(e.target.value) })}
+        />
+        <small className="inline-help">Scenario-style ratio: {100 - local.definitionRatio}%</small>
+
+        <label htmlFor="difficulty">Difficulty</label>
+        <select
+          id="difficulty"
+          value={local.difficulty}
+          onChange={(e) => setLocal({ ...local, difficulty: e.target.value as Difficulty })}
+        >
+          <option>Easy</option>
+          <option>Medium</option>
+          <option>Hard</option>
         </select>
-      </label>
-      <label>Daily goal
-        <input type="number" min={5} value={local.dailyGoal} onChange={(e) => setLocal({ ...local, dailyGoal: Number(e.target.value) })} />
-      </label>
-      <button onClick={() => setSettings({ ...local, selectedTopics: local.selectedTopics.length ? local.selectedTopics : [...STUDY_TOPICS] })}>Save settings</button>
+
+        <label htmlFor="daily-goal">Daily goal (cards/day)</label>
+        <input
+          id="daily-goal"
+          type="number"
+          min={5}
+          value={local.dailyGoal}
+          onChange={(e) => setLocal({ ...local, dailyGoal: Number(e.target.value) })}
+        />
+      </div>
+
+      <button type="button" onClick={save}>
+        Save settings
+      </button>
     </section>
   );
 };
