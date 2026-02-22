@@ -22,8 +22,8 @@ input:not([type="checkbox"]), select { width: 100%; margin: 6px 0 12px; padding:
 .flip-face { position: absolute; width: 100%; backface-visibility: hidden; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; min-height: 350px; }
 .flip-face.back { transform: rotateY(180deg); }
 .options { display: grid; gap: 8px; }
-.options button, .ratings button { background: #f3f4f6; color: #111827; text-align: left; }
-.ratings { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.options button { background: #f3f4f6; color: #111827; text-align: left; }
+.clickable-back { cursor: pointer; }
 .tag { font-size: .8rem; color: #6b7280; }
 
 .settings-page { display: grid; gap: 12px; }

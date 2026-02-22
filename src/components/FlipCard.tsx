@@ -25,15 +25,12 @@ export const FlipCard = ({ card, selected, reveal, onSelect, onContinue }: Props
           </div>
         </section>
 
-        <section className="flip-face back">
+        <section className="flip-face back clickable-back" onClick={onContinue} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onContinue()}>
           <h2>{isCorrect ? '✅ Correct' : '❌ Not quite'}</h2>
           <p>Your answer: {selected !== null ? String.fromCharCode(65 + selected) : '-'}</p>
           <p>Correct answer: {String.fromCharCode(65 + card.answerIndex)}. {card.options[card.answerIndex]}</p>
           <p>{card.explanation}</p>
-          <div className="ratings">
-            <button onClick={onContinue}>Next card</button>
-          </div>
-          <small>Scheduling is automatic: correct answers are marked as Good, incorrect answers as Again.</small>
+          <small>Tap anywhere on this card to continue. Scheduling is automatic: correct answers are marked as Good, incorrect answers as Again.</small>
         </section>
       </div>
     </div>
