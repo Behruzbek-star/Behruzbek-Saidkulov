@@ -82,8 +82,8 @@ const createCard = (topic: Topic, style: 'definition' | 'scenario', difficulty: 
   const concept = topicConcepts[topic][id.charCodeAt(0) % topicConcepts[topic].length];
   const prompt =
     style === 'definition'
-      ? `Which option BEST describes ${concept} in ${topic}?`
-      : `An applicant asks about ${concept} under ${topic}. Which response is the BEST exam-style answer?`;
+      ? `What is ${concept} under ${topic}?`
+      : `What is the best answer about ${concept} under ${topic}?`;
   const options = [
     `It centers on matching coverage terms to the insured exposure and policy conditions.`,
     `It guarantees all losses are paid if any premium was collected.`,
