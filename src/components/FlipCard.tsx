@@ -5,10 +5,10 @@ interface Props {
   selected: number | null;
   reveal: boolean;
   onSelect: (idx: number) => void;
-  onRate: (rating: 'Again' | 'Hard' | 'Good' | 'Easy') => void;
+  onContinue: () => void;
 }
 
-export const FlipCard = ({ card, selected, reveal, onSelect, onRate }: Props) => {
+export const FlipCard = ({ card, selected, reveal, onSelect, onContinue }: Props) => {
   const isCorrect = selected === card.answerIndex;
   return (
     <div className="flip-wrap">
@@ -31,11 +31,9 @@ export const FlipCard = ({ card, selected, reveal, onSelect, onRate }: Props) =>
           <p>Correct answer: {String.fromCharCode(65 + card.answerIndex)}. {card.options[card.answerIndex]}</p>
           <p>{card.explanation}</p>
           <div className="ratings">
-            {(['Again', 'Hard', 'Good', 'Easy'] as const).map((r) => (
-              <button key={r} onClick={() => onRate(r)}>{r}</button>
-            ))}
+            <button onClick={onContinue}>Next card</button>
           </div>
-          {!isCorrect && <small>Incorrect answers are scheduled as “Again” for SRS consistency.</small>}
+          <small>Scheduling is automatic: correct answers are marked as Good, incorrect answers as Again.</small>
         </section>
       </div>
     </div>

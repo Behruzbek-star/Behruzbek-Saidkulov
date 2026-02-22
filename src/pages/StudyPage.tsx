@@ -40,9 +40,9 @@ export const StudyPage = () => {
         selected={selected}
         reveal={selected !== null}
         onSelect={(idx) => setSelected(idx)}
-        onRate={(rating) => {
+        onContinue={() => {
           if (selected === null) return;
-          recordReview(card.id, selected, rating, Date.now() - start);
+          recordReview(card.id, selected, 'Good', Date.now() - start);
           setCursor((c) => c + 1);
           setSelected(null);
           setStart(Date.now());
