@@ -1,0 +1,27 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #1f2937; background: #f8fafc; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.app-shell { max-width: 760px; margin: 0 auto; padding: 12px 12px 72px; }
+header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.brand { text-decoration: none; font-weight: 800; font-size: 1.3rem; }
+main section { background: white; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px #0000000d; }
+nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: #fff; border-top: 1px solid #ddd; }
+nav a { flex: 1; text-align: center; padding: 10px 0; text-decoration: none; color: #374151; }
+nav a.active { color: #2563eb; font-weight: 600; }
+.grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.grid article { background: #eff6ff; border-radius: 10px; padding: 10px; }
+.cta, button { background: #2563eb; color: white; padding: 10px 12px; border: none; border-radius: 8px; text-decoration: none; display: inline-block; margin-top: 8px; }
+input, select { width: 100%; margin: 6px 0 12px; padding: 8px; border-radius: 8px; border: 1px solid #cbd5e1; }
+.checklist { display: grid; gap: 6px; margin-bottom: 10px; }
+.checklist label { display: flex; gap: 8px; align-items: center; }
+.grid-form { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.flip-wrap { perspective: 1000px; min-height: 350px; }
+.flip-inner { position: relative; transform-style: preserve-3d; transition: transform 0.6s; min-height: 350px; }
+.flip-inner.flipped { transform: rotateY(180deg); }
+.flip-face { position: absolute; width: 100%; backface-visibility: hidden; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; min-height: 350px; }
+.flip-face.back { transform: rotateY(180deg); }
+.options { display: grid; gap: 8px; }
+.options button, .ratings button { background: #f3f4f6; color: #111827; text-align: left; }
+.ratings { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+.tag { font-size: .8rem; color: #6b7280; }
+@media (max-width: 500px){ .grid { grid-template-columns: 1fr; } }
