@@ -8,6 +8,7 @@ interface AppCtx {
   state: AppState;
   setSettings: (settings: Settings) => void;
   addScore: (score: ScoreEntry) => void;
+  resetScores: () => void;
   generateNewCards: (count: number, seed?: number) => void;
   recordReview: (cardId: string, selectedIndex: number, rating: Rating, timeSpentMs: number) => void;
   dueCards: Card[];
@@ -48,6 +49,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     dueCards,
     setSettings: (settings) => update({ ...state, settings }),
     addScore: (score) => update({ ...state, scoreHistory: [...state.scoreHistory, score].sort((a, b) => a.date.localeCompare(b.date)) }),
+    resetScores: () => update({ ...state, scoreHistory: [] }),
     generateNewCards: (count, seed) => {
       const cards = generateCards({ settings: state.settings }, { topicStats, scoreHistory: state.scoreHistory }, count, seed);
       const reviews = { ...state.reviews };
