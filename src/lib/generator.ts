@@ -384,14 +384,6 @@ const pickWeightedTopic = (topics: Topic[], userState: UserState, rand: () => nu
   return topics[topics.length - 1];
 };
 
-const chooseDifficulty = (base: Difficulty, userState: UserState, rand: () => number): Difficulty => {
-  const recent = userState.scoreHistory.slice(-3);
-  const avgOverall = recent.length ? recent.reduce((s, r) => s + r.overallPct, 0) / recent.length : 70;
-  if (avgOverall > 85 && rand() > 0.35) return base === 'Easy' ? 'Medium' : 'Hard';
-  if (avgOverall < 68 && rand() > 0.4) return base === 'Hard' ? 'Medium' : 'Easy';
-  return base;
-};
-
 const shuffle = <T,>(items: T[], rand: () => number): T[] => {
   const out = [...items];
   for (let i = out.length - 1; i > 0; i -= 1) {
@@ -451,7 +443,7 @@ export const generateCards = (config: GeneratorConfig, userState: UserState, cou
   return Array.from({ length: count }, (_, i) => {
     const topic = pickWeightedTopic(topics, userState, rand);
     const style = rand() < 0.6 ? 'definition' : 'scenario';
-    const difficulty = chooseDifficulty(config.settings.difficulty, userState, rand);
+    const difficulty: Difficulty = "Medium";
     return createCard(topic, style, difficulty, `${seed}-${i}-${Math.floor(rand() * 9999)}`, rand);
   });
 };

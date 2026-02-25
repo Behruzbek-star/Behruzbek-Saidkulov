@@ -4,7 +4,6 @@ const navItems = [
   ['/', 'Home'],
   ['/study', 'Study'],
   ['/dashboard', 'Dashboard'],
-  ['/scores', 'Scores'],
   ['/settings', 'Settings'],
 ];
 

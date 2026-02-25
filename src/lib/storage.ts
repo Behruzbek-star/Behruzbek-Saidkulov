@@ -8,7 +8,6 @@ const SCHEMA_VERSION = 1;
 export const defaultSettings: Settings = {
   examMode: 'New York P&C',
   selectedTopics: [...STUDY_TOPICS],
-  difficulty: 'Medium',
   dailyGoal: 20,
   newCardsBatchSize: 10,
   theme: 'light',

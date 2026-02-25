@@ -59,7 +59,6 @@ export interface ScoreEntry {
 export interface Settings {
   examMode: 'New York P&C';
   selectedTopics: Topic[];
-  difficulty: Difficulty;
   dailyGoal: number;
   newCardsBatchSize: number;
   theme: ThemeName;

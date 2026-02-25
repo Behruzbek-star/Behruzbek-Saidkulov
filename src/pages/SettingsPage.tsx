@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAppState } from '../lib/state';
-import { Difficulty, STUDY_TOPICS, ThemeName, Topic } from '../lib/types';
+import { STUDY_TOPICS, ThemeName, Topic } from '../lib/types';
 
 
 const themeOptions: { value: ThemeName; label: string }[] = [
@@ -116,17 +116,6 @@ export const SettingsPage = () => {
 
       <div className="settings-block">
         <h3>Generation Preferences</h3>
-
-        <label htmlFor="difficulty">Difficulty</label>
-        <select
-          id="difficulty"
-          value={local.difficulty}
-          onChange={(e) => setLocal({ ...local, difficulty: e.target.value as Difficulty })}
-        >
-          <option>Easy</option>
-          <option>Medium</option>
-          <option>Hard</option>
-        </select>
 
 
         <label htmlFor="theme">Theme</label>
