@@ -401,9 +401,22 @@ const shuffle = <T,>(items: T[], rand: () => number): T[] => {
   return out;
 };
 
+const normalizePrompt = (text: string): string => {
+  return text
+    .replace(/\s+/g, ' ')
+    .replace(/\?\?/g, '?')
+    .trim();
+};
+
 const buildPrompt = (template: TopicTemplate, style: 'definition' | 'scenario'): string => {
-  if (style === 'definition') return template.definitionPrompt;
-  return `${template.scenarioPrompt} What is the best answer?`;
+  if (style === 'definition') return normalizePrompt(template.definitionPrompt);
+
+  const base = normalizePrompt(template.scenarioPrompt);
+  if (/what is the best answer\?/i.test(base) || /which option is most accurate\?/i.test(base)) {
+    return base;
+  }
+  if (base.endsWith('?')) return base;
+  return `${base} What is the best answer?`;
 };
 
 const createCard = (topic: Topic, style: 'definition' | 'scenario', difficulty: Difficulty, id: string, rand: () => number): Card => {
