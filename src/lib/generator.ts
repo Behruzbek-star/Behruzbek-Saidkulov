@@ -297,13 +297,30 @@ const shuffle = <T,>(items: T[], rand: () => number): T[] => {
   return out;
 };
 
+const buildPrompt = (template: TopicTemplate, style: 'definition' | 'scenario', rand: () => number): string => {
+  if (style === 'definition') {
+    const stems = [
+      `Which of the following BEST describes ${template.concept}?`,
+      `Which statement is TRUE regarding ${template.concept}?`,
+      template.definitionPrompt,
+    ];
+    return stems[Math.floor(rand() * stems.length)];
+  }
+
+  const scenarioStems = [
+    `${template.scenarioPrompt} What is the BEST answer?`,
+    `${template.scenarioPrompt} Which option is most accurate?`,
+  ];
+  return scenarioStems[Math.floor(rand() * scenarioStems.length)];
+};
+
 const createCard = (topic: Topic, style: 'definition' | 'scenario', difficulty: Difficulty, id: string, rand: () => number): Card => {
   const templates = topicTemplates[topic];
   const template = templates[Math.floor(rand() * templates.length)];
 
   const correct = difficulty === 'Hard' && template.hardCorrect ? template.hardCorrect : template.correct;
   const distractors = difficulty === 'Hard' && template.hardDistractors ? template.hardDistractors : template.distractors;
-  const prompt = style === 'definition' ? template.definitionPrompt : template.scenarioPrompt;
+  const prompt = buildPrompt(template, style, rand);
 
   const mixedOptions = shuffle([correct, ...distractors], rand) as [string, string, string, string];
   const answerIndex = mixedOptions.findIndex((option) => option === correct) as 0 | 1 | 2 | 3;

@@ -18,7 +18,7 @@ export const FlipCard = ({ card, selected, reveal, onSelect, onContinue }: Props
           <h2>{card.prompt}</h2>
           <div className="options">
             {card.options.map((option, i) => (
-              <button key={option} onClick={() => onSelect(i)} disabled={selected !== null}>
+              <button className="option-btn" key={option} onClick={() => onSelect(i)} disabled={selected !== null}>
                 {String.fromCharCode(65 + i)}. {option}
               </button>
             ))}

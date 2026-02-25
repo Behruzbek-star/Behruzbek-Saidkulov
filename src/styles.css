@@ -103,6 +103,9 @@ input:not([type="checkbox"]), select { width: 100%; margin: 6px 0 12px; padding:
 .flip-face.back { transform: rotateY(180deg); }
 .options { display: grid; gap: 8px; }
 .options button { background: var(--surface); color: var(--text); text-align: left; }
+.option-btn { border: 2px solid var(--primary); border-radius: 10px; padding: 10px; box-shadow: 0 1px 2px #00000012; }
+.option-btn:hover { filter: brightness(0.97); }
+.option-btn:disabled { opacity: 1; }
 .clickable-back { cursor: pointer; }
 .tag { font-size: .8rem; color: var(--tag-text); }
 
