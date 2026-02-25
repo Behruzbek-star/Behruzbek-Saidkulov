@@ -12,6 +12,7 @@ export const defaultSettings: Settings = {
   difficulty: 'Medium',
   dailyGoal: 20,
   newCardsBatchSize: 10,
+  theme: 'light',
 };
 
 const sampleScores: ScoreEntry[] = [

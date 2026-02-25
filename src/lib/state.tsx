@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { generateCards } from './generator';
 import { applySrs, scheduleInitialReview } from './srs';
 import { loadState, saveState } from './storage';
@@ -42,6 +42,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     () => state.cards.filter((c) => new Date(state.reviews[c.id]?.nextDueAt ?? 0).getTime() <= Date.now()),
     [state],
   );
+
+  useEffect(() => {
+    document.body.setAttribute('data-theme', state.settings.theme);
+  }, [state.settings.theme]);
 
   const value: AppCtx = {
     state,

@@ -16,6 +16,7 @@ export type Topic = (typeof STUDY_TOPICS)[number];
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type CardStyle = 'definition' | 'scenario';
 export type Rating = 'Again' | 'Hard' | 'Good' | 'Easy';
+export type ThemeName = 'light' | 'ocean' | 'forest' | 'sunset' | 'midnight';
 
 export interface Card {
   id: string;
@@ -62,6 +63,7 @@ export interface Settings {
   difficulty: Difficulty;
   dailyGoal: number;
   newCardsBatchSize: number;
+  theme: ThemeName;
 }
 
 export interface AppState {

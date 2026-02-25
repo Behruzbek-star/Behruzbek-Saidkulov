@@ -1,6 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useAppState } from '../lib/state';
-import { Difficulty, STUDY_TOPICS, Topic } from '../lib/types';
+import { Difficulty, STUDY_TOPICS, ThemeName, Topic } from '../lib/types';
+
+
+const themeOptions: { value: ThemeName; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'ocean', label: 'Ocean Blue' },
+  { value: 'forest', label: 'Forest Green' },
+  { value: 'sunset', label: 'Sunset Orange' },
+  { value: 'midnight', label: 'Midnight Dark' },
+];
 
 export const SettingsPage = () => {
   const { state, setSettings } = useAppState();
@@ -128,6 +137,18 @@ export const SettingsPage = () => {
           <option>Easy</option>
           <option>Medium</option>
           <option>Hard</option>
+        </select>
+
+
+        <label htmlFor="theme">Theme</label>
+        <select
+          id="theme"
+          value={local.theme}
+          onChange={(e) => setLocal({ ...local, theme: e.target.value as ThemeName })}
+        >
+          {themeOptions.map((theme) => (
+            <option key={theme.value} value={theme.value}>{theme.label}</option>
+          ))}
         </select>
 
         <label htmlFor="daily-goal">Daily goal (cards/day)</label>
