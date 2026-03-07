@@ -122,7 +122,15 @@ export const SettingsPage = () => {
         <select
           id="theme"
           value={local.theme}
-          onChange={(e) => setLocal({ ...local, theme: e.target.value as ThemeName })}
+          onChange={(e) => {
+            const nextTheme = e.target.value as ThemeName;
+            const next = { ...local, theme: nextTheme };
+            setLocal(next);
+            setSettings({
+              ...next,
+              selectedTopics: next.selectedTopics.length ? next.selectedTopics : [...STUDY_TOPICS],
+            });
+          }}
         >
           {themeOptions.map((theme) => (
             <option key={theme.value} value={theme.value}>{theme.label}</option>
