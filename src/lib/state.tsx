@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { generateCards } from './generator';
 import { applySrs, scheduleInitialReview } from './srs';
 import { loadState, saveState } from './storage';
 import { AppState, Card, QuestionBankItem, Rating, ReviewHistory, ScoreEntry, Settings, Topic } from './types';
@@ -9,7 +8,6 @@ interface AppCtx {
   setSettings: (settings: Settings) => void;
   addScore: (score: ScoreEntry) => void;
   resetScores: () => void;
-  generateNewCards: (count: number, seed?: number) => void;
   addQuestion: (question: QuestionBankItem) => void;
   removeQuestion: (questionId: string) => void;
   recordReview: (cardId: string, selectedIndex: number, rating: Rating, timeSpentMs: number) => void;
@@ -19,17 +17,41 @@ interface AppCtx {
 
 const Ctx = createContext<AppCtx | null>(null);
 
+const questionToCard = (question: QuestionBankItem): Card => ({
+  id: question.id,
+  type: 'mcq',
+  prompt: question.prompt,
+  options: question.options,
+  answerIndex: question.answerIndex,
+  explanation: 'From your provided quiz bank.',
+  topic: question.topic,
+  difficulty: 'Medium',
+  style: 'definition',
+  createdAt: new Date().toISOString(),
+});
+
 const calcTopicStats = (state: AppState): Record<Topic, { correct: number; total: number }> => {
   const stats = {} as Record<Topic, { correct: number; total: number }>;
-  state.cards.forEach((c) => {
-    if (!stats[c.topic]) stats[c.topic] = { correct: 0, total: 0 };
-    state.reviews[c.id]?.history.forEach((h) => {
-      stats[c.topic].total += 1;
-      if (h.wasCorrect) stats[c.topic].correct += 1;
+  state.questionBank.forEach((q) => {
+    if (!stats[q.topic]) stats[q.topic] = { correct: 0, total: 0 };
+    state.reviews[q.id]?.history.forEach((h) => {
+      if (!stats[q.topic]) return;
+      stats[q.topic].total += 1;
+      if (h.wasCorrect) stats[q.topic].correct += 1;
     });
   });
   return stats;
 };
+
+const mapQuestionsByTopic = (state: AppState): Card[] => {
+  const selectedTopics = state.settings.selectedTopics.length ? state.settings.selectedTopics : [];
+  const filtered = selectedTopics.length
+    ? state.questionBank.filter((q) => selectedTopics.includes(q.topic))
+    : [...state.questionBank];
+  return filtered.map(questionToCard);
+};
+
+const calcDueCards = (state: AppState): Card[] => mapQuestionsByTopic(state);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, setState] = useState<AppState>(() => loadState());
@@ -40,10 +62,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const topicStats = useMemo(() => calcTopicStats(state), [state]);
-  const dueCards = useMemo(
-    () => state.cards.filter((c) => new Date(state.reviews[c.id]?.nextDueAt ?? 0).getTime() <= Date.now()),
-    [state],
-  );
+  const dueCards = useMemo(() => calcDueCards(state), [state]);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', state.settings.theme);
@@ -56,20 +75,12 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     setSettings: (settings) => update({ ...state, settings }),
     addScore: (score) => update({ ...state, scoreHistory: [...state.scoreHistory, score].sort((a, b) => a.date.localeCompare(b.date)) }),
     resetScores: () => update({ ...state, scoreHistory: [] }),
-    generateNewCards: (count, seed) => {
-      const cards = generateCards({ settings: state.settings, questionBank: state.questionBank }, { topicStats, scoreHistory: state.scoreHistory }, count, seed);
-      const reviews = { ...state.reviews };
-      cards.forEach((card) => {
-        reviews[card.id] = scheduleInitialReview(card.id);
-      });
-      update({ ...state, cards: [...state.cards, ...cards], reviews });
-    },
     addQuestion: (question) => update({ ...state, questionBank: [...state.questionBank, question] }),
     removeQuestion: (questionId) => update({ ...state, questionBank: state.questionBank.filter((q) => q.id !== questionId) }),
     recordReview: (cardId, selectedIndex, rating, timeSpentMs) => {
-      const card = state.cards.find((c) => c.id === cardId);
-      if (!card) return;
-      const wasCorrect = card.answerIndex === selectedIndex;
+      const question = state.questionBank.find((q) => q.id === cardId);
+      if (!question) return;
+      const wasCorrect = question.answerIndex === selectedIndex;
       const current = state.reviews[cardId] ?? scheduleInitialReview(cardId);
       const history: ReviewHistory = { selectedIndex, wasCorrect, rating: wasCorrect ? rating : 'Again', timestamp: new Date().toISOString(), timeSpentMs };
       const updated = applySrs({ ...current, history: [...current.history, history] }, rating, wasCorrect);

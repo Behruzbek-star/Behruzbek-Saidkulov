@@ -1,5 +1,4 @@
-import { DEFAULT_QUIZ_BANK, generateCards } from './generator';
-import { scheduleInitialReview } from './srs';
+import { DEFAULT_QUIZ_BANK } from './generator';
 import { AppState, Card, QuestionBankItem, Review, ScoreEntry, Settings, STUDY_TOPICS } from './types';
 
 const KEY = 'ny_pc_flashcards_state';
@@ -18,19 +17,10 @@ const sampleScores: ScoreEntry[] = [
 ];
 
 const seedState = (): AppState => {
-  const cards = generateCards(
-    { settings: defaultSettings, questionBank: DEFAULT_QUIZ_BANK },
-    { topicStats: {}, scoreHistory: sampleScores },
-    8,
-    101,
-  );
   const reviews: Record<string, Review> = {};
-  cards.forEach((card) => {
-    reviews[card.id] = scheduleInitialReview(card.id);
-  });
   return {
     schemaVersion: SCHEMA_VERSION,
-    cards,
+    cards: [],
     reviews,
     settings: defaultSettings,
     questionBank: DEFAULT_QUIZ_BANK,
