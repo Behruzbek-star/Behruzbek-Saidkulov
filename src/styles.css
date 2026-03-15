@@ -181,8 +181,3 @@ input:not([type="checkbox"]), select { width: 100%; margin: 6px 0 12px; padding:
 .pdf-preview-list { display: grid; gap: 10px; margin-top: 10px; }
 .duplicate-item { border-color: #f59e0b; background: color-mix(in srgb, var(--card) 85%, #fef3c7 15%); }
 
-.cheat-sheet-block {
-  margin-top: 12px;
-  border-top: 1px dashed var(--border);
-  padding-top: 10px;
-}

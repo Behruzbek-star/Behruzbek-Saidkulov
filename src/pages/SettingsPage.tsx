@@ -1,6 +1,6 @@
 import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../lib/state';
-import { extractQuestionNumber, parseAnswerSheetFromPdf, parseQuestionsFromPdf } from '../lib/pdfImport';
+import { extractQuestionNumber, parseQuestionsFromPdf } from '../lib/pdfImport';
 import { QuestionBankItem, STUDY_TOPICS, ThemeName, Topic } from '../lib/types';
 
 const themeOptions: { value: ThemeName; label: string }[] = [
@@ -22,23 +22,14 @@ interface PreviewQuestion {
 
 const normalizePrompt = (value: string): string => value.trim().toLowerCase().replace(/\s+/g, ' ');
 
-const extractQuestionNumberFromId = (id: string): number | null => {
-  const match = id.match(/pdf-q(\d{1,4})/i);
-  return match ? Number(match[1]) : null;
-};
-
 export const SettingsPage = () => {
-  const { state, setSettings, addQuestion, addQuestions, removeQuestion, clearAllQuestions, updateQuestion, updateQuestions } = useAppState();
+  const { state, setSettings, addQuestion, addQuestions, removeQuestion, clearAllQuestions, updateQuestion } = useAppState();
   const [local, setLocal] = useState(state.settings);
   const [showQuestionManager, setShowQuestionManager] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [cheatSheetFile, setCheatSheetFile] = useState<File | null>(null);
   const pdfInputRef = useRef<HTMLInputElement | null>(null);
-  const cheatSheetInputRef = useRef<HTMLInputElement | null>(null);
   const [pdfStatus, setPdfStatus] = useState<string>('');
-  const [cheatSheetStatus, setCheatSheetStatus] = useState<string>('');
   const [importingPdf, setImportingPdf] = useState(false);
-  const [applyingCheatSheet, setApplyingCheatSheet] = useState(false);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [preview, setPreview] = useState<PreviewQuestion[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -98,58 +89,6 @@ export const SettingsPage = () => {
     setPreview([]);
     const file = event.target.files?.[0] ?? null;
     setPdfFile(file);
-  };
-
-  const onCheatSheetPick = (event: ChangeEvent<HTMLInputElement>) => {
-    setCheatSheetStatus('');
-    const file = event.target.files?.[0] ?? null;
-    setCheatSheetFile(file);
-  };
-
-  const applyCheatSheet = async () => {
-    const fileFromInput = cheatSheetInputRef.current?.files?.[0] ?? null;
-    const fileToImport = cheatSheetFile ?? fileFromInput;
-    if (!fileToImport) {
-      setCheatSheetStatus('Please choose an answer-sheet PDF first.');
-      return;
-    }
-
-    setApplyingCheatSheet(true);
-    setCheatSheetStatus('Reading answer sheet and updating correct choices by question number...');
-    const answerMap = await parseAnswerSheetFromPdf(fileToImport).catch(() => new Map<number, 0 | 1 | 2 | 3>());
-
-    if (!answerMap.size) {
-      setApplyingCheatSheet(false);
-      setCheatSheetStatus('No answer-key pattern found. Use entries like "1. C" or "45. B" in the answer sheet PDF.');
-      return;
-    }
-
-    const updates = state.questionBank
-      .map((question) => {
-        const questionNumber = extractQuestionNumber(question.prompt) ?? extractQuestionNumberFromId(question.id);
-        if (!questionNumber) return null;
-        const mapped = answerMap.get(questionNumber);
-        if (mapped === undefined) return null;
-        return { ...question, answerIndex: mapped };
-      })
-      .filter(Boolean) as QuestionBankItem[];
-
-    if (!updates.length) {
-      setApplyingCheatSheet(false);
-      setCheatSheetStatus('No matching question numbers were found. Re-import questions so each question text starts with its number (example: "45. ...").');
-      return;
-    }
-
-    const changed = updates.filter((item) => {
-      const current = state.questionBank.find((q) => q.id === item.id);
-      return current ? current.answerIndex !== item.answerIndex : false;
-    });
-
-    updateQuestions(updates);
-    setApplyingCheatSheet(false);
-    setCheatSheetStatus(`Matched ${updates.length} numbered question(s); ${changed.length} answer choice(s) changed.`);
-    setCheatSheetFile(null);
-    if (cheatSheetInputRef.current) cheatSheetInputRef.current.value = '';
   };
 
   const importFromPdf = async () => {
@@ -371,22 +310,13 @@ export const SettingsPage = () => {
 
             <div className="pdf-import-block">
               <h4>Import Questions from PDF</h4>
-              <p className="inline-help">Upload PDF, review parsed questions, edit if needed, then import selected rows.</p>
+              <p className="inline-help">Upload PDF with each question including its answer at the bottom (for example: Answer: C), then review and import selected rows.</p>
               <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={onPdfPick} />
               <button type="button" onClick={importFromPdf} disabled={importingPdf}>{importingPdf ? 'Parsing...' : 'Preview PDF Questions'}</button>
               {pdfFile && <small className="inline-help">Selected file: {pdfFile.name}</small>}
               {pdfStatus && <small className="inline-help">{pdfStatus}</small>}
 
-              <div className="cheat-sheet-block">
-                <h4>Upload Answer Sheet (Cheat Sheet)</h4>
-                <p className="inline-help">Upload a separate PDF answer key. It matches by question number (for example: 1. C, 45. B).</p>
-                <input ref={cheatSheetInputRef} type="file" accept="application/pdf" onChange={onCheatSheetPick} />
-                <button type="button" className="secondary-btn" onClick={applyCheatSheet} disabled={applyingCheatSheet}>
-                  {applyingCheatSheet ? 'Applying...' : 'Apply Answer Sheet'}
-                </button>
-                {cheatSheetFile && <small className="inline-help">Selected answer sheet: {cheatSheetFile.name}</small>}
-                {cheatSheetStatus && <small className="inline-help">{cheatSheetStatus}</small>}
-              </div>
+
 
               {preview.length > 0 && (
                 <div className="pdf-preview-list">

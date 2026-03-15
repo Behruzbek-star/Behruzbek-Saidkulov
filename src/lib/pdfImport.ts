@@ -46,7 +46,7 @@ export const parseAnswerSheetFromText = (text: string): Map<number, 0 | 1 | 2 | 
 
 export const parseQuestionsFromText = (text: string): ParsedQuestion[] => {
   const answerSheet = parseAnswerSheetFromText(text);
-  const blockRegex = /(?:^|\n)\s*(?:Q(?:uestion)?\s*\d*[:.)-]?\s*)?(.+?)\s*\n\s*A[\).:-]\s*(.+?)\s*\n\s*B[\).:-]\s*(.+?)\s*\n\s*C[\).:-]\s*(.+?)\s*\n\s*D[\).:-]\s*(.+?)(?:\s*\n\s*(?:Answer|Correct\s*Answer)\s*[:=-]?\s*([A-D]))?(?=\n\s*(?:Q(?:uestion)?\s*\d*[:.)-]?\s*)?[^\n]+\n\s*A[\).:-]|$)/gims;
+  const blockRegex = /(?:^|\n)\s*(?:Q(?:uestion)?\s*\d*[:.)-]?\s*)?(.+?)\s*\n\s*A[\).:-]\s*(.+?)\s*\n\s*B[\).:-]\s*(.+?)\s*\n\s*C[\).:-]\s*(.+?)\s*\n\s*D[\).:-]\s*(.+?)(?:\s*\n\s*(?:Answer|Correct\s*Answer|Ans(?:wer)?)\s*[:=-]?\s*([A-D]))?(?=\n\s*(?:Q(?:uestion)?\s*\d*[:.)-]?\s*)?[^\n]+\n\s*A[\).:-]|$)/gims;
 
   const questions: ParsedQuestion[] = [];
   let fallbackQuestionNumber = 1;
@@ -59,7 +59,11 @@ export const parseQuestionsFromText = (text: string): ParsedQuestion[] => {
 
     const prompt = normalizeWhitespace(rawPrompt);
     const options = [match[2], match[3], match[4], match[5]].map((item) => normalizeWhitespace(item || '')) as [string, string, string, string];
-    const inlineAnswer = match[6];
+    const trailingAnswerMatch = options[3].match(/^(.*?)(?:\s+(?:Answer|Correct\s*Answer|Ans(?:wer)?)\s*[:=-]?\s*([A-D]))$/i);
+    if (trailingAnswerMatch) {
+      options[3] = normalizeWhitespace(trailingAnswerMatch[1]);
+    }
+    const inlineAnswer = match[6] ?? trailingAnswerMatch?.[2];
     const mappedAnswer = answerSheet.get(questionNumber);
     const answerIndex = inlineAnswer ? parseAnswerIndex(inlineAnswer) : (mappedAnswer ?? 0);
 
