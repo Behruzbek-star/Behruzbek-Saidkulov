@@ -310,7 +310,7 @@ export const SettingsPage = () => {
 
             <div className="pdf-import-block">
               <h4>Import Questions from PDF</h4>
-              <p className="inline-help">Upload PDF with each question including its answer at the bottom (for example: Answer: C), then review and import selected rows.</p>
+              <p className="inline-help">Upload PDF and the app will auto-detect correct answers from either: (1) answer listed at the bottom of each question, or (2) green-highlighted correct answers tied to question numbers.</p>
               <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={onPdfPick} />
               <button type="button" onClick={importFromPdf} disabled={importingPdf}>{importingPdf ? 'Parsing...' : 'Preview PDF Questions'}</button>
               {pdfFile && <small className="inline-help">Selected file: {pdfFile.name}</small>}
