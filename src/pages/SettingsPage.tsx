@@ -23,7 +23,7 @@ interface PreviewQuestion {
 const normalizePrompt = (value: string): string => value.trim().toLowerCase().replace(/\s+/g, ' ');
 
 export const SettingsPage = () => {
-  const { state, setSettings, addQuestion, removeQuestion, clearAllQuestions, updateQuestion } = useAppState();
+  const { state, setSettings, addQuestion, addQuestions, removeQuestion, clearAllQuestions, updateQuestion } = useAppState();
   const [local, setLocal] = useState(state.settings);
   const [showQuestionManager, setShowQuestionManager] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -131,20 +131,23 @@ export const SettingsPage = () => {
 
   const importSelectedPreview = () => {
     const rows = preview.filter((p) => p.selected && p.prompt.trim() && p.options.every((opt) => opt.trim()));
-    const imported: PreviewQuestion[] = [];
-    rows.forEach((item, index) => {
-      if (skipDuplicates && item.isDuplicate) return;
-      addQuestion({
+    const toImport = rows
+      .filter((item) => (skipDuplicates ? !item.isDuplicate : true))
+      .map((item, index) => ({
         id: `pdf-${Date.now()}-${index}`,
         topic: form.topic,
         prompt: item.prompt.trim(),
         options: item.options.map((o) => o.trim()) as [string, string, string, string],
         answerIndex: item.answerIndex,
-      });
-      imported.push(item);
-    });
+      }));
 
-    setPdfStatus(`Imported ${imported.length} question(s) into topic: ${form.topic}.`);
+    if (toImport.length === 0) {
+      setPdfStatus('No selected rows were eligible for import.');
+      return;
+    }
+
+    addQuestions(toImport);
+    setPdfStatus(`Imported ${toImport.length} question(s) into topic: ${form.topic}.`);
     setPreview([]);
     setPdfFile(null);
     if (pdfInputRef.current) pdfInputRef.current.value = '';

@@ -9,6 +9,7 @@ interface AppCtx {
   addScore: (score: ScoreEntry) => void;
   resetScores: () => void;
   addQuestion: (question: QuestionBankItem) => void;
+  addQuestions: (questions: QuestionBankItem[]) => void;
   removeQuestion: (questionId: string) => void;
   clearAllQuestions: () => void;
   updateQuestion: (question: QuestionBankItem) => void;
@@ -78,6 +79,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     addScore: (score) => update({ ...state, scoreHistory: [...state.scoreHistory, score].sort((a, b) => a.date.localeCompare(b.date)) }),
     resetScores: () => update({ ...state, scoreHistory: [] }),
     addQuestion: (question) => update({ ...state, questionBank: [...state.questionBank, question] }),
+    addQuestions: (questions) => update({ ...state, questionBank: [...state.questionBank, ...questions] }),
     removeQuestion: (questionId) => update({ ...state, questionBank: state.questionBank.filter((q) => q.id !== questionId) }),
     clearAllQuestions: () => update({ ...state, questionBank: [], reviews: {} }),
     updateQuestion: (question) => update({ ...state, questionBank: state.questionBank.map((q) => (q.id === question.id ? question : q)) }),
