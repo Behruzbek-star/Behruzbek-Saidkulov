@@ -27,22 +27,19 @@ export const extractQuestionNumber = (raw: string): number | null => {
 
 export const parseAnswerSheetFromText = (text: string): Map<number, 0 | 1 | 2 | 3> => {
   const answerMap = new Map<number, 0 | 1 | 2 | 3>();
-  const lines = text.split(/\r?\n/);
 
-  lines.forEach((line) => {
-    const normalized = line.trim();
-    if (!normalized) return;
+  const keySection = text.match(/answer\s*key[\s\S]*/i)?.[0] ?? text;
+  const sanitized = keySection
+    .replace(/[^\dA-Da-d).:\-\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-    const likelyAnswerLine = /answer|key/i.test(normalized) || /\d/.test(normalized) && /[A-Da-d]/.test(normalized);
-    if (!likelyAnswerLine) return;
-
-    const pairRegex = /(?:^|\s|,|;)(\d{1,4})\s*[).:\-]?\s*([A-Da-d])(?=\s|$|,|;)/g;
-    let pair: RegExpExecArray | null = pairRegex.exec(normalized);
-    while (pair) {
-      answerMap.set(Number(pair[1]), parseAnswerIndex(pair[2]));
-      pair = pairRegex.exec(normalized);
-    }
-  });
+  const pairRegex = /(\d{1,4})\s*[).:\-]?\s*([A-Da-d])(?=\s|$)/g;
+  let pair: RegExpExecArray | null = pairRegex.exec(sanitized);
+  while (pair) {
+    answerMap.set(Number(pair[1]), parseAnswerIndex(pair[2]));
+    pair = pairRegex.exec(sanitized);
+  }
 
   return answerMap;
 };
