@@ -13,6 +13,7 @@ interface AppCtx {
   removeQuestion: (questionId: string) => void;
   clearAllQuestions: () => void;
   updateQuestion: (question: QuestionBankItem) => void;
+  updateQuestions: (questions: QuestionBankItem[]) => void;
   recordReview: (cardId: string, selectedIndex: number, rating: Rating, timeSpentMs: number) => void;
   dueCards: Card[];
   topicStats: Record<Topic, { correct: number; total: number }>;
@@ -83,6 +84,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     removeQuestion: (questionId) => update({ ...state, questionBank: state.questionBank.filter((q) => q.id !== questionId) }),
     clearAllQuestions: () => update({ ...state, questionBank: [], reviews: {} }),
     updateQuestion: (question) => update({ ...state, questionBank: state.questionBank.map((q) => (q.id === question.id ? question : q)) }),
+    updateQuestions: (questions) => {
+      const byId = new Map(questions.map((q) => [q.id, q]));
+      update({ ...state, questionBank: state.questionBank.map((q) => byId.get(q.id) ?? q) });
+    },
     recordReview: (cardId, selectedIndex, rating, timeSpentMs) => {
       const question = state.questionBank.find((q) => q.id === cardId);
       if (!question) return;

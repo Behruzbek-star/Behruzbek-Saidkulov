@@ -19,13 +19,13 @@ const parseAnswerIndex = (answer: string | undefined): 0 | 1 | 2 | 3 => {
   return 0;
 };
 
-const extractQuestionNumber = (raw: string): number | null => {
+export const extractQuestionNumber = (raw: string): number | null => {
   const byQuestionLabel = raw.match(/^\s*(?:Q(?:uestion)?\s*)?(\d{1,4})\s*[).:-]?\s*/i);
   if (!byQuestionLabel) return null;
   return Number(byQuestionLabel[1]);
 };
 
-const parseAnswerSheet = (text: string): Map<number, 0 | 1 | 2 | 3> => {
+export const parseAnswerSheetFromText = (text: string): Map<number, 0 | 1 | 2 | 3> => {
   const answerMap = new Map<number, 0 | 1 | 2 | 3>();
   const lines = text.split(/\r?\n/);
 
@@ -48,7 +48,7 @@ const parseAnswerSheet = (text: string): Map<number, 0 | 1 | 2 | 3> => {
 };
 
 export const parseQuestionsFromText = (text: string): ParsedQuestion[] => {
-  const answerSheet = parseAnswerSheet(text);
+  const answerSheet = parseAnswerSheetFromText(text);
   const blockRegex = /(?:^|\n)\s*(?:Q(?:uestion)?\s*\d*[:.)-]?\s*)?(.+?)\s*\n\s*A[\).:-]\s*(.+?)\s*\n\s*B[\).:-]\s*(.+?)\s*\n\s*C[\).:-]\s*(.+?)\s*\n\s*D[\).:-]\s*(.+?)(?:\s*\n\s*(?:Answer|Correct\s*Answer)\s*[:=-]?\s*([A-D]))?(?=\n\s*(?:Q(?:uestion)?\s*\d*[:.)-]?\s*)?[^\n]+\n\s*A[\).:-]|$)/gims;
 
   const questions: ParsedQuestion[] = [];
@@ -80,7 +80,7 @@ export const parseQuestionsFromText = (text: string): ParsedQuestion[] => {
   return questions;
 };
 
-export const parseQuestionsFromPdf = async (file: File): Promise<ParsedQuestion[]> => {
+const extractPdfText = async (file: File): Promise<string> => {
   const bytes = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
   const pages: string[] = [];
@@ -94,5 +94,15 @@ export const parseQuestionsFromPdf = async (file: File): Promise<ParsedQuestion[
     pages.push(pageText);
   }
 
-  return parseQuestionsFromText(pages.join('\n'));
+  return pages.join('\n');
+};
+
+export const parseQuestionsFromPdf = async (file: File): Promise<ParsedQuestion[]> => {
+  const text = await extractPdfText(file);
+  return parseQuestionsFromText(text);
+};
+
+export const parseAnswerSheetFromPdf = async (file: File): Promise<Map<number, 0 | 1 | 2 | 3>> => {
+  const text = await extractPdfText(file);
+  return parseAnswerSheetFromText(text);
 };
