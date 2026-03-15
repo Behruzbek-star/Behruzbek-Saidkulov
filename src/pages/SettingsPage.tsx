@@ -119,23 +119,43 @@ export const SettingsPage = () => {
       return;
     }
 
-    const updated = state.questionBank.map((question, index) => {
+    const directMatched = state.questionBank.map((question, index) => {
       const questionNumber = extractQuestionNumber(question.prompt) ?? (index + 1);
       const mapped = answerMap.get(questionNumber);
-      if (mapped === undefined) return question;
+      if (mapped === undefined) return null;
       return { ...question, answerIndex: mapped };
-    });
+    }).filter(Boolean) as QuestionBankItem[];
 
-    const changed = updated.filter((item, index) => item.answerIndex !== state.questionBank[index].answerIndex);
-    if (!changed.length) {
+    let updates = directMatched;
+    let usedOrderedFallback = false;
+
+    if (updates.length === 0) {
+      const orderedAnswers = [...answerMap.entries()].sort((a, b) => a[0] - b[0]).map(([, answer]) => answer);
+      const maxCount = Math.min(orderedAnswers.length, state.questionBank.length);
+      updates = state.questionBank.slice(0, maxCount).map((question, idx) => ({ ...question, answerIndex: orderedAnswers[idx] }));
+      usedOrderedFallback = updates.length > 0;
+    }
+
+    if (!updates.length) {
       setApplyingCheatSheet(false);
       setCheatSheetStatus('No matching question numbers were found to update.');
       return;
     }
 
-    updateQuestions(changed);
+    const changed = updates.filter((item) => {
+      const current = state.questionBank.find((q) => q.id === item.id);
+      return current ? current.answerIndex !== item.answerIndex : false;
+    });
+
+    updateQuestions(updates);
     setApplyingCheatSheet(false);
-    setCheatSheetStatus(`Updated correct answer choice for ${changed.length} question(s).`);
+    const changedCount = changed.length;
+    const matchedCount = updates.length;
+    if (usedOrderedFallback) {
+      setCheatSheetStatus(`Applied answer sheet by order for ${matchedCount} question(s); ${changedCount} answer choice(s) changed.`);
+    } else {
+      setCheatSheetStatus(`Matched ${matchedCount} question number(s); ${changedCount} answer choice(s) changed.`);
+    }
     setCheatSheetFile(null);
     if (cheatSheetInputRef.current) cheatSheetInputRef.current.value = '';
   };
