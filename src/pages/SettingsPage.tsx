@@ -22,6 +22,11 @@ interface PreviewQuestion {
 
 const normalizePrompt = (value: string): string => value.trim().toLowerCase().replace(/\s+/g, ' ');
 
+const extractQuestionNumberFromId = (id: string): number | null => {
+  const match = id.match(/pdf-q(\d{1,4})/i);
+  return match ? Number(match[1]) : null;
+};
+
 export const SettingsPage = () => {
   const { state, setSettings, addQuestion, addQuestions, removeQuestion, clearAllQuestions, updateQuestion, updateQuestions } = useAppState();
   const [local, setLocal] = useState(state.settings);
@@ -110,35 +115,28 @@ export const SettingsPage = () => {
     }
 
     setApplyingCheatSheet(true);
-    setCheatSheetStatus('Reading answer sheet and updating correct choices...');
+    setCheatSheetStatus('Reading answer sheet and updating correct choices by question number...');
     const answerMap = await parseAnswerSheetFromPdf(fileToImport).catch(() => new Map<number, 0 | 1 | 2 | 3>());
 
     if (!answerMap.size) {
       setApplyingCheatSheet(false);
-      setCheatSheetStatus('No answer-key pattern found. Use pairs like "1 A", "2-B", "3.C" in the cheat-sheet PDF.');
+      setCheatSheetStatus('No answer-key pattern found. Use entries like "1. C" or "45. B" in the answer sheet PDF.');
       return;
     }
 
-    const directMatched = state.questionBank.map((question, index) => {
-      const questionNumber = extractQuestionNumber(question.prompt) ?? (index + 1);
-      const mapped = answerMap.get(questionNumber);
-      if (mapped === undefined) return null;
-      return { ...question, answerIndex: mapped };
-    }).filter(Boolean) as QuestionBankItem[];
-
-    let updates = directMatched;
-    let usedOrderedFallback = false;
-
-    if (updates.length === 0) {
-      const orderedAnswers = [...answerMap.entries()].sort((a, b) => a[0] - b[0]).map(([, answer]) => answer);
-      const maxCount = Math.min(orderedAnswers.length, state.questionBank.length);
-      updates = state.questionBank.slice(0, maxCount).map((question, idx) => ({ ...question, answerIndex: orderedAnswers[idx] }));
-      usedOrderedFallback = updates.length > 0;
-    }
+    const updates = state.questionBank
+      .map((question) => {
+        const questionNumber = extractQuestionNumber(question.prompt) ?? extractQuestionNumberFromId(question.id);
+        if (!questionNumber) return null;
+        const mapped = answerMap.get(questionNumber);
+        if (mapped === undefined) return null;
+        return { ...question, answerIndex: mapped };
+      })
+      .filter(Boolean) as QuestionBankItem[];
 
     if (!updates.length) {
       setApplyingCheatSheet(false);
-      setCheatSheetStatus('No matching question numbers were found to update.');
+      setCheatSheetStatus('No matching question numbers were found. Re-import questions so each question text starts with its number (example: "45. ...").');
       return;
     }
 
@@ -149,13 +147,7 @@ export const SettingsPage = () => {
 
     updateQuestions(updates);
     setApplyingCheatSheet(false);
-    const changedCount = changed.length;
-    const matchedCount = updates.length;
-    if (usedOrderedFallback) {
-      setCheatSheetStatus(`Applied answer sheet by order for ${matchedCount} question(s); ${changedCount} answer choice(s) changed.`);
-    } else {
-      setCheatSheetStatus(`Matched ${matchedCount} question number(s); ${changedCount} answer choice(s) changed.`);
-    }
+    setCheatSheetStatus(`Matched ${updates.length} numbered question(s); ${changed.length} answer choice(s) changed.`);
     setCheatSheetFile(null);
     if (cheatSheetInputRef.current) cheatSheetInputRef.current.value = '';
   };
@@ -203,7 +195,7 @@ export const SettingsPage = () => {
     const toImport = rows
       .filter((item) => (skipDuplicates ? !item.isDuplicate : true))
       .map((item, index) => ({
-        id: `pdf-${Date.now()}-${index}`,
+        id: (() => { const qn = extractQuestionNumber(item.prompt); return qn ? `pdf-q${qn}-${Date.now()}-${index}` : `pdf-${Date.now()}-${index}`; })(),
         topic: form.topic,
         prompt: item.prompt.trim(),
         options: item.options.map((o) => o.trim()) as [string, string, string, string],
@@ -387,7 +379,7 @@ export const SettingsPage = () => {
 
               <div className="cheat-sheet-block">
                 <h4>Upload Answer Sheet (Cheat Sheet)</h4>
-                <p className="inline-help">Upload a separate PDF answer key. It updates correct choices automatically using question number mapping (for example: 1 A, 2-B).</p>
+                <p className="inline-help">Upload a separate PDF answer key. It matches by question number (for example: 1. C, 45. B).</p>
                 <input ref={cheatSheetInputRef} type="file" accept="application/pdf" onChange={onCheatSheetPick} />
                 <button type="button" className="secondary-btn" onClick={applyCheatSheet} disabled={applyingCheatSheet}>
                   {applyingCheatSheet ? 'Applying...' : 'Apply Answer Sheet'}

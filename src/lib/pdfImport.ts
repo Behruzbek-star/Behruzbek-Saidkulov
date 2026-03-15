@@ -57,7 +57,7 @@ export const parseQuestionsFromText = (text: string): ParsedQuestion[] => {
     const questionNumber = extractQuestionNumber(rawPrompt) ?? fallbackQuestionNumber;
     fallbackQuestionNumber = Math.max(fallbackQuestionNumber + 1, questionNumber + 1);
 
-    const prompt = normalizeWhitespace(rawPrompt.replace(/^\s*(?:Q(?:uestion)?\s*)?\d{1,4}\s*[).:-]?\s*/i, ''));
+    const prompt = normalizeWhitespace(rawPrompt);
     const options = [match[2], match[3], match[4], match[5]].map((item) => normalizeWhitespace(item || '')) as [string, string, string, string];
     const inlineAnswer = match[6];
     const mappedAnswer = answerSheet.get(questionNumber);
