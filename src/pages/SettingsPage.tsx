@@ -1,4 +1,4 @@
-import { ChangeEvent, useMemo, useState } from 'react';
+import { ChangeEvent, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../lib/state';
 import { parseQuestionsFromPdf } from '../lib/pdfImport';
 import { QuestionBankItem, STUDY_TOPICS, ThemeName, Topic } from '../lib/types';
@@ -16,6 +16,7 @@ export const SettingsPage = () => {
   const [local, setLocal] = useState(state.settings);
   const [showQuestionManager, setShowQuestionManager] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const pdfInputRef = useRef<HTMLInputElement | null>(null);
   const [pdfStatus, setPdfStatus] = useState<string>('');
   const [importingPdf, setImportingPdf] = useState(false);
   const [form, setForm] = useState<QuestionBankItem>({
@@ -72,13 +73,15 @@ export const SettingsPage = () => {
   };
 
   const importFromPdf = async () => {
-    if (!pdfFile) {
+    const fileFromInput = pdfInputRef.current?.files?.[0] ?? null;
+    const fileToImport = pdfFile ?? fileFromInput;
+    if (!fileToImport) {
       setPdfStatus('Please choose a PDF file first.');
       return;
     }
     setImportingPdf(true);
     setPdfStatus('Reading PDF and extracting questions...');
-    const parsed = await parseQuestionsFromPdf(pdfFile).catch(() => []);
+    const parsed = await parseQuestionsFromPdf(fileToImport).catch(() => []);
     if (!parsed.length) {
       setImportingPdf(false);
       setPdfStatus('No supported questions were detected. Use format: prompt + A/B/C/D options (optional Answer: B).');
@@ -97,6 +100,7 @@ export const SettingsPage = () => {
     setImportingPdf(false);
     setPdfStatus(`Imported ${parsed.length} question(s) into topic: ${form.topic}.`);
     setPdfFile(null);
+    if (pdfInputRef.current) pdfInputRef.current.value = '';
   };
 
   return (
@@ -208,7 +212,7 @@ export const SettingsPage = () => {
             <div className="pdf-import-block">
               <h4>Import Questions from PDF</h4>
               <p className="inline-help">Upload a PDF with format: question text + lines starting with A), B), C), D). Optional line: Answer: B</p>
-              <input type="file" accept="application/pdf" onChange={onPdfPick} />
+              <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={onPdfPick} />
               <button type="button" onClick={importFromPdf} disabled={importingPdf}>{importingPdf ? 'Importing...' : 'Import PDF Questions'}</button>
               {pdfFile && <small className="inline-help">Selected file: {pdfFile.name}</small>}
               {pdfStatus && <small className="inline-help">{pdfStatus}</small>}
