@@ -19,21 +19,61 @@ const parseAnswerIndex = (answer: string | undefined): 0 | 1 | 2 | 3 => {
   return 0;
 };
 
+const extractQuestionNumber = (raw: string): number | null => {
+  const byQuestionLabel = raw.match(/^\s*(?:Q(?:uestion)?\s*)?(\d{1,4})\s*[).:-]?\s*/i);
+  if (!byQuestionLabel) return null;
+  return Number(byQuestionLabel[1]);
+};
+
+const parseAnswerSheet = (text: string): Map<number, 0 | 1 | 2 | 3> => {
+  const answerMap = new Map<number, 0 | 1 | 2 | 3>();
+  const lines = text.split(/\r?\n/);
+
+  lines.forEach((line) => {
+    const normalized = line.trim();
+    if (!normalized) return;
+
+    const likelyAnswerLine = /answer|key/i.test(normalized) || /\d/.test(normalized) && /[A-Da-d]/.test(normalized);
+    if (!likelyAnswerLine) return;
+
+    const pairRegex = /(?:^|\s|,|;)(\d{1,4})\s*[).:\-]?\s*([A-Da-d])(?=\s|$|,|;)/g;
+    let pair: RegExpExecArray | null = pairRegex.exec(normalized);
+    while (pair) {
+      answerMap.set(Number(pair[1]), parseAnswerIndex(pair[2]));
+      pair = pairRegex.exec(normalized);
+    }
+  });
+
+  return answerMap;
+};
+
 export const parseQuestionsFromText = (text: string): ParsedQuestion[] => {
+  const answerSheet = parseAnswerSheet(text);
   const blockRegex = /(?:^|\n)\s*(?:Q(?:uestion)?\s*\d*[:.)-]?\s*)?(.+?)\s*\n\s*A[\).:-]\s*(.+?)\s*\n\s*B[\).:-]\s*(.+?)\s*\n\s*C[\).:-]\s*(.+?)\s*\n\s*D[\).:-]\s*(.+?)(?:\s*\n\s*(?:Answer|Correct\s*Answer)\s*[:=-]?\s*([A-D]))?(?=\n\s*(?:Q(?:uestion)?\s*\d*[:.)-]?\s*)?[^\n]+\n\s*A[\).:-]|$)/gims;
 
   const questions: ParsedQuestion[] = [];
+  let fallbackQuestionNumber = 1;
   let match: RegExpExecArray | null = blockRegex.exec(text);
+
   while (match) {
-    const prompt = normalizeWhitespace(match[1] || '');
+    const rawPrompt = match[1] || '';
+    const questionNumber = extractQuestionNumber(rawPrompt) ?? fallbackQuestionNumber;
+    fallbackQuestionNumber = Math.max(fallbackQuestionNumber + 1, questionNumber + 1);
+
+    const prompt = normalizeWhitespace(rawPrompt.replace(/^\s*(?:Q(?:uestion)?\s*)?\d{1,4}\s*[).:-]?\s*/i, ''));
     const options = [match[2], match[3], match[4], match[5]].map((item) => normalizeWhitespace(item || '')) as [string, string, string, string];
+    const inlineAnswer = match[6];
+    const mappedAnswer = answerSheet.get(questionNumber);
+    const answerIndex = inlineAnswer ? parseAnswerIndex(inlineAnswer) : (mappedAnswer ?? 0);
+
     if (prompt && options.every(Boolean)) {
       questions.push({
         prompt,
         options,
-        answerIndex: parseAnswerIndex(match[6]),
+        answerIndex,
       });
     }
+
     match = blockRegex.exec(text);
   }
 
