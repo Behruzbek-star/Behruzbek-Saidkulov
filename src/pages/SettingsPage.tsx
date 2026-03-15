@@ -12,7 +12,7 @@ const themeOptions: { value: ThemeName; label: string }[] = [
 ];
 
 export const SettingsPage = () => {
-  const { state, setSettings, addQuestion, removeQuestion } = useAppState();
+  const { state, setSettings, addQuestion, removeQuestion, clearAllQuestions } = useAppState();
   const [local, setLocal] = useState(state.settings);
   const [showQuestionManager, setShowQuestionManager] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -176,7 +176,20 @@ export const SettingsPage = () => {
 
         {showQuestionManager && (
           <>
-            <p className="inline-help">You currently have {state.questionBank.length} questions saved.</p>
+            <div className="topic-actions">
+              <p className="inline-help">You currently have {state.questionBank.length} questions saved.</p>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => {
+                  if (state.questionBank.length === 0) return;
+                  if (!window.confirm('Remove all questions from your question bank?')) return;
+                  clearAllQuestions();
+                }}
+              >
+                Clear all
+              </button>
+            </div>
             <div className="question-list">
               {state.questionBank.map((q) => (
                 <div key={q.id} className="question-item">

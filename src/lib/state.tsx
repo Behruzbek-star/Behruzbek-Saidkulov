@@ -10,6 +10,7 @@ interface AppCtx {
   resetScores: () => void;
   addQuestion: (question: QuestionBankItem) => void;
   removeQuestion: (questionId: string) => void;
+  clearAllQuestions: () => void;
   recordReview: (cardId: string, selectedIndex: number, rating: Rating, timeSpentMs: number) => void;
   dueCards: Card[];
   topicStats: Record<Topic, { correct: number; total: number }>;
@@ -77,6 +78,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     resetScores: () => update({ ...state, scoreHistory: [] }),
     addQuestion: (question) => update({ ...state, questionBank: [...state.questionBank, question] }),
     removeQuestion: (questionId) => update({ ...state, questionBank: state.questionBank.filter((q) => q.id !== questionId) }),
+    clearAllQuestions: () => update({ ...state, questionBank: [], reviews: {} }),
     recordReview: (cardId, selectedIndex, rating, timeSpentMs) => {
       const question = state.questionBank.find((q) => q.id === cardId);
       if (!question) return;
