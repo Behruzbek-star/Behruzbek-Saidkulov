@@ -11,6 +11,15 @@ interface ParsedQuestion {
 interface TextItemLike {
   str?: string;
   transform?: number[];
+  width?: number;
+  height?: number;
+}
+
+interface AnnotationLike {
+  color?: number[];
+  rect?: number[];
+  quadPoints?: number[];
+  subtype?: string;
 }
 
 const normalizeWhitespace = (value: string): string => value.replace(/\s+/g, ' ').trim();
@@ -49,20 +58,35 @@ export const parseAnswerSheetFromText = (text: string): Map<number, 0 | 1 | 2 | 
   return answerMap;
 };
 
-const isGreenAnnotation = (annotation: unknown): boolean => {
-  const maybe = annotation as { color?: number[] };
-  const color = maybe.color;
+const isGreenAnnotation = (annotation: AnnotationLike): boolean => {
+  const { color } = annotation;
   if (!Array.isArray(color) || color.length < 3) return false;
   const [r, g, b] = color;
   return g > r * 1.2 && g > b * 1.2;
 };
 
+const isHighlightLike = (annotation: AnnotationLike): boolean => {
+  const subtype = annotation.subtype?.toLowerCase();
+  return subtype === 'highlight' || subtype === 'square' || subtype === 'ink';
+};
+
+const doesIntersect = (
+  target: { minX: number; maxX: number; minY: number; maxY: number },
+  item: { minX: number; maxX: number; minY: number; maxY: number },
+): boolean => {
+  const overlapX = target.minX <= item.maxX && target.maxX >= item.minX;
+  const overlapY = target.minY <= item.maxY && target.maxY >= item.minY;
+  return overlapX && overlapY;
+};
+
 const textInsideRect = (items: TextItemLike[], rect: number[]): string => {
   const [x1, y1, x2, y2] = rect;
-  const minX = Math.min(x1, x2);
-  const maxX = Math.max(x1, x2);
-  const minY = Math.min(y1, y2);
-  const maxY = Math.max(y1, y2);
+  const target = {
+    minX: Math.min(x1, x2) - 2,
+    maxX: Math.max(x1, x2) + 2,
+    minY: Math.min(y1, y2) - 2,
+    maxY: Math.max(y1, y2) + 2,
+  };
 
   return items
     .filter((item) => {
@@ -70,10 +94,41 @@ const textInsideRect = (items: TextItemLike[], rect: number[]): string => {
       if (!t || t.length < 6) return false;
       const x = t[4];
       const y = t[5];
-      return x >= minX && x <= maxX && y >= minY && y <= maxY;
+      const width = item.width ?? 0;
+      const height = item.height ?? Math.abs(t[3]) || 8;
+      const itemRect = {
+        minX: Math.min(x, x + width),
+        maxX: Math.max(x, x + width),
+        minY: y - height,
+        maxY: y + 2,
+      };
+      return doesIntersect(target, itemRect);
     })
     .map((item) => item.str ?? '')
     .join(' ');
+};
+
+const extractSnippetsFromAnnotation = (items: TextItemLike[], annotation: AnnotationLike): string[] => {
+  const snippets: string[] = [];
+
+  if (Array.isArray(annotation.quadPoints) && annotation.quadPoints.length >= 8) {
+    for (let i = 0; i + 7 < annotation.quadPoints.length; i += 8) {
+      const points = annotation.quadPoints.slice(i, i + 8);
+      const xs = [points[0], points[2], points[4], points[6]];
+      const ys = [points[1], points[3], points[5], points[7]];
+      snippets.push(
+        normalizeWhitespace(
+          textInsideRect(items, [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]),
+        ),
+      );
+    }
+  }
+
+  if (snippets.length === 0 && Array.isArray(annotation.rect) && annotation.rect.length >= 4) {
+    snippets.push(normalizeWhitespace(textInsideRect(items, annotation.rect)));
+  }
+
+  return snippets.filter(Boolean);
 };
 
 const parseGreenHighlights = async (pdf: pdfjsLib.PDFDocumentProxy): Promise<Map<number, 0 | 1 | 2 | 3>> => {
@@ -83,24 +138,20 @@ const parseGreenHighlights = async (pdf: pdfjsLib.PDFDocumentProxy): Promise<Map
     const page = await pdf.getPage(pageNum);
     const content = await page.getTextContent();
     const items = content.items as TextItemLike[];
-    const annotations = await page.getAnnotations();
+    const annotations = (await page.getAnnotations()) as AnnotationLike[];
 
     annotations
-      .filter((annotation) => isGreenAnnotation(annotation))
+      .filter((annotation) => isHighlightLike(annotation) && isGreenAnnotation(annotation))
       .forEach((annotation) => {
-        const maybe = annotation as { rect?: number[] };
-        const rect = maybe.rect;
-        if (!Array.isArray(rect) || rect.length < 4) return;
-
-        const snippet = normalizeWhitespace(textInsideRect(items, rect));
-        if (!snippet) return;
-
-        const pairRegex = /(\d{1,4})\s*[).:\-]?\s*([A-Da-d])/g;
-        let pair: RegExpExecArray | null = pairRegex.exec(snippet);
-        while (pair) {
-          answerMap.set(Number(pair[1]), parseAnswerIndex(pair[2]));
-          pair = pairRegex.exec(snippet);
-        }
+        const snippets = extractSnippetsFromAnnotation(items, annotation);
+        snippets.forEach((snippet) => {
+          const pairRegex = /(\d{1,4})\s*[).:\-]?\s*([A-Da-d])/g;
+          let pair: RegExpExecArray | null = pairRegex.exec(snippet);
+          while (pair) {
+            answerMap.set(Number(pair[1]), parseAnswerIndex(pair[2]));
+            pair = pairRegex.exec(snippet);
+          }
+        });
       });
   }
 
@@ -127,11 +178,11 @@ export const parseQuestionsFromText = (text: string, highlightAnswerMap?: Map<nu
       options[3] = normalizeWhitespace(trailingAnswerMatch[1]);
     }
     const inlineAnswer = match[6] ?? trailingAnswerMatch?.[2];
-    const mappedAnswer = answerSheet.get(questionNumber);
     const highlightedAnswer = highlightAnswerMap?.get(questionNumber);
+    const mappedAnswer = answerSheet.get(questionNumber);
     const answerIndex = inlineAnswer
       ? parseAnswerIndex(inlineAnswer)
-      : (mappedAnswer ?? highlightedAnswer ?? 0);
+      : (highlightedAnswer ?? mappedAnswer ?? 0);
 
     if (prompt && options.every(Boolean)) {
       questions.push({
