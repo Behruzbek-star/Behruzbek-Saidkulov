@@ -95,7 +95,7 @@ const textInsideRect = (items: TextItemLike[], rect: number[]): string => {
       const x = t[4];
       const y = t[5];
       const width = item.width ?? 0;
-      const height = item.height ?? Math.abs(t[3]) || 8;
+      const height = item.height ?? (Math.abs(t[3]) || 8);
       const itemRect = {
         minX: Math.min(x, x + width),
         maxX: Math.max(x, x + width),
